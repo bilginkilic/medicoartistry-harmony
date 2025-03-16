@@ -1,12 +1,93 @@
 # MedicoArtistry Harmony API Documentation
 
+## API Methods Index
+
+### Authentication Endpoints
+- `POST /api/auth/register` - Register a new user
+- `POST /api/auth/login` - User login
+- `POST /api/auth/reset-password` - Request password reset
+- `POST /api/auth/verify-email` - Verify user email
+- `POST /api/auth/refresh-token` - Refresh authentication token
+
+### User Management Endpoints
+- `GET /api/users/:id` - Get user profile
+- `PUT /api/users/:id` - Update user information
+- `PUT /api/users/:id/medical-history` - Update user medical history
+- `GET /api/doctors` - Get list of available doctors
+- `GET /api/users/:id/history` - Get patient history timeline
+- `PUT /api/users/:id/status` - Update user status (visitor to patient)
+- `GET /api/users/:id/data-access-report` - Get KVKK compliance data access report
+
+### Appointment Endpoints
+- `GET /api/appointments` - Get appointments list
+- `GET /api/appointments/:id` - Get detailed appointment info
+- `POST /api/appointments` - Create new appointment
+- `PUT /api/appointments/:id` - Update appointment details
+- `DELETE /api/appointments/:id` - Cancel an appointment
+- `GET /api/appointments/available-slots` - Get available appointment slots
+- `GET /api/appointments/upcoming-controls` - Get upcoming control appointments
+- `GET /api/appointments/recommended-control-dates` - Get recommended date ranges for control visits
+
+### Procedure Categories Endpoints
+- `GET /api/procedure-categories` - Get all procedure categories
+- `GET /api/procedure-categories/:id` - Get specific category with procedure types
+- `POST /api/procedure-categories` - Create procedure category
+- `PUT /api/procedure-categories/:id` - Update procedure category
+
+### ProcedureTypes Endpoints
+- `GET /api/procedure-types` - Get list of procedure types
+- `GET /api/procedure-types/:id` - Get specific procedure type details
+- `POST /api/procedure-types` - Create procedure type
+- `PUT /api/procedure-types/:id` - Update procedure type
+- `GET /api/procedure-types/:id/routine` - Get detailed follow-up routine for specific procedure
+
+### ProcedureRecords Endpoints
+- `GET /api/procedure-records` - Get procedure records
+- `GET /api/procedure-records/:id` - Get detailed procedure record
+- `POST /api/procedure-records` - Create procedure record
+- `PUT /api/procedure-records/:id` - Update procedure record
+- `GET /api/procedure-records/patient/:patientId` - Get patient's procedure records
+- `GET /api/procedure-records/follow-ups` - Get procedures requiring follow-up
+- `POST /api/procedure-records/:id/patient-feedback` - Submit patient feedback
+- `GET /api/procedure-records/statistics` - Get procedure statistics
+- `POST /api/procedure-records/:id/photos` - Add photos to procedure record
+
+### Patient History Endpoints
+- `GET /api/patient-history/:patientId` - Get complete patient history
+- `GET /api/patient-history/:patientId/timeline` - Get patient timeline
+- `GET /api/patient-history/:patientId/procedures` - Get summary of patient procedures
+- `POST /api/patient-history/:patientId/notes` - Add note to patient history
+- `GET /api/patient-history/:patientId/treatment-progress` - Get visual treatment progress
+
+### Notification Endpoints
+- `GET /api/notifications` - Get user notifications
+- `PUT /api/notifications/:id/read` - Mark notification as read
+- `POST /api/notifications/test` - Send test notification
+- `POST /api/notifications/sms` - Send SMS notification
+- `POST /api/notifications/email` - Send email notification
+- `GET /api/notifications/settings` - Get notification preferences
+- `PUT /api/notifications/settings` - Update notification preferences
+
+### File Upload Endpoints
+- `POST /api/uploads/procedure-image` - Upload procedure image
+- `POST /api/uploads/patient-document` - Upload patient document
+- `POST /api/uploads/profile-photo` - Upload user profile photo
+
+### Mobile-Specific Endpoints
+- `GET /api/mobile/config` - Get mobile app configuration
+- `POST /api/mobile/register-device` - Register device for push notifications
+- `GET /api/mobile/procedure-library` - Get optimized procedure library for mobile
+
 ## Technical Stack
 - **Runtime Environment**: Node.js
+- **Frontend Framework**: React with TypeScript and Vite
+- **Styling**: TailwindCSS
 - **Database**: Firebase Firestore
 - **Authentication**: Firebase Authentication
 - **Storage**: Firebase Cloud Storage
 - **Cloud Functions**: Firebase Cloud Functions
-- **Notifications**: Firebase Cloud Messaging (FCM)
+- **Notifications**: Firebase Cloud Messaging (FCM), SMS API, Email Service
+- **Compliance**: KVKK (Turkish Data Protection) compliant data handling
 
 ## Project Architecture
 
@@ -40,6 +121,19 @@
        conditions: string[];
      };
      lastVisit?: Timestamp;          // Son ziyaret tarihi
+     notificationPreferences?: {     // Bildirim tercihleri
+       sms: boolean;
+       email: boolean;
+       push: boolean;
+       reminderLeadTime: number;     // Hatırlatma öncesi süre (saat)
+     };
+     deviceTokens?: string[];        // Mobil cihaz token'ları
+     dataConsentTimestamp?: Timestamp; // KVKK onay tarihi
+     dataAccessRequests?: {          // Veri erişim talepleri
+       requestDate: Timestamp;
+       status: 'pending' | 'completed' | 'rejected';
+       completionDate?: Timestamp;
+     }[];
      createdAt: Timestamp;
      updatedAt: Timestamp;
    }
@@ -792,6 +886,170 @@ const ERROR_CODES = {
     SERVICE_UNAVAILABLE: 'SRV_004'
   }
 };
+```
+
+## Procedure-Specific Routines
+
+### Botox Treatment Routine
+```typescript
+// Example of a procedure-specific routine
+const botoxRoutine = {
+  procedureTypeId: "botox-type-1",
+  name: "Standard Botox Treatment",
+  checkupIntervals: [
+    {
+      stageName: "First Control",
+      dayAfterProcedure: {
+        min: 10,
+        max: 14,
+        recommended: 12
+      },
+      isRequired: true,
+      description: "First checkup to verify results and make adjustments if needed"
+    }
+  ],
+  nextProcedureInterval: {
+    min: 150, // 5 months
+    recommended: 180, // 6 months
+    max: 210 // 7 months
+  },
+  reminderSchedule: [
+    {
+      daysBefore: 150, // Send first reminder 1 month before recommended date
+      type: "initial",
+      channels: ["push", "email"]
+    },
+    {
+      daysBefore: 7,
+      type: "followup",
+      channels: ["push", "sms", "email"]
+    },
+    {
+      daysBefore: 1,
+      type: "urgent",
+      channels: ["sms", "push"]
+    }
+  ],
+  aftercare: [
+    "Avoid touching the treated area for 24 hours",
+    "Avoid strenuous exercise for 24 hours",
+    "Avoid alcohol for 24 hours",
+    "Do not lie down for 4 hours after treatment"
+  ]
+};
+```
+
+## KVKK Compliance
+
+The API implements necessary measures to comply with KVKK (Turkish Personal Data Protection Law):
+
+1. **Data Access Reports**
+   ```typescript
+   // User data access report structure
+   interface DataAccessReport {
+     userId: string;
+     generatedAt: Timestamp;
+     dataCategories: {
+       category: string; // e.g., "personal", "medical", "appointments"
+       fields: string[];
+       lastUpdated: Timestamp;
+       sharedWith?: {
+         entity: string;
+         purpose: string;
+         date: Timestamp;
+       }[];
+     }[];
+     dataRetentionPolicy: string;
+     dataUsageDescription: string;
+   }
+   ```
+
+2. **Consent Management**
+   ```typescript
+   // Consent record structure
+   interface ConsentRecord {
+     userId: string;
+     consents: {
+       type: 'general' | 'marketing' | 'thirdParty';
+       given: boolean;
+       timestamp: Timestamp;
+       ipAddress?: string;
+       method: 'app' | 'web' | 'inPerson';
+     }[];
+     updatedAt: Timestamp;
+   }
+   ```
+
+3. **Data Deletion Requests**
+   ```typescript
+   // Data deletion request structure
+   interface DeletionRequest {
+     userId: string;
+     requestedAt: Timestamp;
+     status: 'pending' | 'processing' | 'completed' | 'rejected';
+     categories: ('all' | 'medical' | 'appointments' | 'photos')[];
+     reason?: string;
+     handledBy?: string;
+     completedAt?: Timestamp;
+     notes?: string;
+   }
+   ```
+
+## Mobile Notifications
+
+The API provides comprehensive mobile notification capabilities:
+
+```typescript
+// Device registration structure
+interface DeviceRegistration {
+  userId: string;
+  deviceToken: string;
+  platform: 'ios' | 'android';
+  model: string;
+  appVersion: string;
+  registeredAt: Timestamp;
+  lastActive: Timestamp;
+  notificationSettings: {
+    appointments: boolean;
+    followUps: boolean;
+    marketing: boolean;
+    silentHours?: {
+      start: string; // HH:MM
+      end: string; // HH:MM
+    };
+  };
+}
+
+// Push notification structure
+interface PushNotification {
+  to: string[]; // device tokens
+  notification: {
+    title: string;
+    body: string;
+    imageUrl?: string;
+  };
+  data: {
+    type: 'appointment' | 'followup' | 'marketing' | 'system';
+    referenceId?: string;
+    action?: string;
+    custom?: Record<string, string>;
+  };
+  android: {
+    priority: 'high' | 'normal';
+    channelId: string;
+  };
+  apns: {
+    headers: {
+      'apns-priority': string;
+    };
+    payload: {
+      aps: {
+        sound: string;
+        badge?: number;
+      };
+    };
+  };
+}
 ```
 
 ## Rate Limiting
