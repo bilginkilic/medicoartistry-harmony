@@ -6,6 +6,7 @@
     "@types/node": "^20.11.28",
     "axios": "^1.6.7",
     "date-fns": "^3.3.1",
+    "lovable-tagger": "^1.1.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.51.1",
