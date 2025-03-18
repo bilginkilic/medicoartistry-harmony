@@ -1,249 +1,83 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { format } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { cn } from '@/lib/utils';
-import api from '../../config/api';
-
-const formSchema = z.object({
-  doctorId: z.string({
-    required_error: 'Please select a doctor',
-  }),
-  date: z.date({
-    required_error: 'Please select a date',
-  }),
-  type: z.enum(['initial', 'follow-up', 'control', 'procedure'], {
-    required_error: 'Please select an appointment type',
-  }),
-  duration: z.number().min(5, 'Duration must be at least 5 minutes'),
-  reason: z.string().min(1, 'Please provide a reason for the appointment'),
-  notes: z.string().optional(),
-});
-
-const NewAppointmentPage = () => {
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      duration: 30,
-    },
-  });
-
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      await api.post('/appointments', {
-        ...values,
-        dateTime: format(values.date, "yyyy-MM-dd'T'HH:mm:ssXXX"),
-      });
-      
-      toast({
-        title: 'Success',
-        description: 'Appointment scheduled successfully',
-      });
-      
-      navigate('/appointments');
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to schedule appointment. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
+const NewAppointment = () => {
   return (
-    <div className="container mx-auto p-6 max-w-2xl">
-      <h1 className="text-2xl font-bold tracking-tight mb-6">Schedule New Appointment</h1>
+    <div className="bg-white shadow rounded-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900">New Appointment</h1>
+        <Link
+          to="/appointments"
+          className="text-indigo-600 hover:text-indigo-900"
+        >
+          Back to appointments
+        </Link>
+      </div>
       
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <FormField
-            control={form.control}
-            name="doctorId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Doctor</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a doctor" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="1">Dr. Smith</SelectItem>
-                    <SelectItem value="2">Dr. Johnson</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="date"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          format(field.value, "PPP")
-                        ) : (
-                          <span>Pick a date</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < new Date()
-                      }
-                      initialFocus
-                      className={cn("rounded-md border pointer-events-auto")}
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
+      <form className="space-y-6">
+        <div>
+          <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+            Appointment Type
+          </label>
+          <select
+            id="type"
             name="type"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Appointment Type</FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select appointment type" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="initial">Initial Visit</SelectItem>
-                    <SelectItem value="follow-up">Follow-up</SelectItem>
-                    <SelectItem value="control">Control</SelectItem>
-                    <SelectItem value="procedure">Procedure</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+          >
+            <option value="initial">Initial Consultation</option>
+            <option value="follow-up">Follow-up</option>
+            <option value="procedure">Procedure</option>
+          </select>
+        </div>
+        
+        <div>
+          <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+            Date
+          </label>
+          <input
+            type="date"
+            name="date"
+            id="date"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
-
-          <FormField
-            control={form.control}
-            name="duration"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Duration (minutes)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    {...field} 
-                    onChange={e => field.onChange(Number(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+        </div>
+        
+        <div>
+          <label htmlFor="time" className="block text-sm font-medium text-gray-700">
+            Time
+          </label>
+          <input
+            type="time"
+            name="time"
+            id="time"
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
-
-          <FormField
-            control={form.control}
+        </div>
+        
+        <div>
+          <label htmlFor="reason" className="block text-sm font-medium text-gray-700">
+            Reason for Visit
+          </label>
+          <textarea
+            id="reason"
             name="reason"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Reason</FormLabel>
-                <FormControl>
-                  <Textarea {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            rows={3}
+            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+            placeholder="Please describe your reason for scheduling this appointment"
           />
-
-          <FormField
-            control={form.control}
-            name="notes"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Additional Notes (Optional)</FormLabel>
-                <FormControl>
-                  <Textarea {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="flex gap-4">
-            <Button type="submit">Schedule Appointment</Button>
-            <Button 
-              type="button" 
-              variant="outline"
-              onClick={() => navigate('/appointments')}
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
-      </Form>
+        </div>
+        
+        <div>
+          <button
+            type="submit"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Schedule Appointment
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
 
-export default NewAppointmentPage;
+export default NewAppointment;

@@ -1,13 +1,12 @@
-
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import React from 'react';
+import { Navigate, Outlet } from 'react-router-dom';
 
 const AuthGuard = () => {
-  const { isAuthenticated } = useAuth();
-  const location = useLocation();
+  // TODO: Implement proper authentication check
+  const isAuthenticated = false;
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
