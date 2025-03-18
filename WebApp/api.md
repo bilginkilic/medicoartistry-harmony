@@ -1,3 +1,6 @@
+#location
+/api folder create all files for apis
+
 # MedicoArtistry Harmony API Documentation
 
 ## API Methods Index
